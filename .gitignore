@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Ignore local files for planning purposes
+ph_erd.sql
+
 # C extensions
 *.so
 
