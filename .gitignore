@@ -5,6 +5,7 @@ __pycache__/
 
 # Ignore local files for planning purposes
 ph_erd.sql
+PostgreSQL Data Types.md
 
 # C extensions
 *.so
