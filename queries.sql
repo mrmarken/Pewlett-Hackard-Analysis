@@ -1,4 +1,70 @@
--- Find people retiring; look at those born between 1952 and 1955
+-- Drop table if already created
+DROP TABLE IF EXISTS departments;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS dept_manager;
+DROP TABLE IF EXISTS salaries;
+DROP TABLE IF EXISTS dept_emp;
+DROP TABLE IF EXISTS titles;
+
+-- Creating tables for PH-EmployeeDB
+CREATE TABLE IF NOT EXISTS departments (
+    dept_no VARCHAR(4) NOT NULL,
+    dept_name VARCHAR(40) NOT NULL,
+    PRIMARY KEY (dept_no),
+    UNIQUE (dept_name)
+);
+
+CREATE TABLE IF NOT EXISTS employees (
+    emp_no INT NOT NULL,
+    birth_date DATE NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    gender VARCHAR NOT NULL,
+    hire_date DATE NOT NULL,
+    PRIMARY KEY (emp_no)
+);
+
+CREATE TABLE IF NOT EXISTS dept_manager (
+    dept_no VARCHAR(4) NOT NULL,
+    emp_no INT NOT NULL,
+    from_date DATE NOT NULL,
+    to_date DATE NOT NULL,
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no),
+    FOREIGN KEY (dept_no) REFERENCES departments (dept_no),
+    PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE IF NOT EXISTS salaries (
+    emp_no INT NOT NULL,
+    salary INT NOT NULL,
+    from_date DATE NOT NULL,
+    to_date DATE NOT NULL,
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no),
+    PRIMARY KEY (emp_no)
+);
+
+CREATE TABLE IF NOT EXISTS dept_emp (
+    emp_no INT NOT NULL,
+    dept_no VARCHAR(5) NOT NULL,
+    from_date DATE NOT NULL,
+    to_date DATE NOT NULL,
+    FOREIGN KEY (dept_no) REFERENCES departments (dept_no),
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no),
+    PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE IF NOT EXISTS titles (
+    emp_no INT NOT NULL,
+    title VARCHAR NOT NULL,
+    from_date DATE NOT NULL,
+    to_date DATE NOT NULL,
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no)
+);
+
+SELECT * FROM dept_emp;
+
+
+-- 
 SELECT first_name, last_name
 FROM employees
 WHERE birth_date BETWEEN '1952-01-01' AND '1955-12-31';
@@ -34,4 +100,125 @@ FROM employees
 WHERE (birth_date BETWEEN '1952-01-01' AND '1955-12-31')
 AND (hire_date BETWEEN '1985-01-01' AND '1988-12-31');
 
-select * FROM retirement_info;
+SELECT * FROM retirement_info;
+
+-- Drop the new table to create a new one
+DROP TABLE retirement_info;
+
+-- Create a new table for retiring employees
+SELECT emp_no, first_name, last_name
+INTO retirement_info
+FROM employees
+WHERE (birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+AND (hire_date BETWEEN '1985-01-01' AND '1988-12-31');
+-- Check the table
+SELECT * FROM retirement_info;
+
+
+-- Joining departments and dept_manager tables
+SELECT departments.dept_name,
+    dept_manager.emp_no,
+    dept_manager.from_date,
+    dept_manager.to_date
+FROM departments
+INNER JOIN dept_manager
+ON departments.dept_no = dept_manager.dept_no;
+
+-- Joining retirement_info and dept_emp tables
+SELECT retirement_info.emp_no,
+    retirement_info.first_name,
+    retirement_info.last_name,
+    dept_emp.to_date
+FROM retirement_info
+LEFT JOIN dept_emp
+ON retirement_info.emp_no = dept_emp.emp_no;
+
+
+-- Joining retirement_info and dept_emp tables using aliases
+SELECT ri.emp_no,
+    ri.first_name,
+    ri.last_name,
+    de.to_date
+FROM retirement_info AS ri
+LEFT JOIN dept_emp AS de
+ON ri.emp_no = de.emp_no;
+
+-- Joining departments and dept_manager tables using aliases
+SELECT d.dept_name,
+    dm.emp_no,
+    dm.from_date,
+    dm.to_date
+FROM departments AS d
+INNER JOIN dept_manager as dm
+ON d.dept_no = dm.dept_no;
+
+
+-- Joining retirement_info and dept_emp tables using aliases
+SELECT ri.emp_no,
+    ri.first_name,
+    ri.last_name,
+    de.to_date
+INTO current_emp
+FROM retirement_info AS ri
+LEFT JOIN dept_emp AS de
+ON ri.emp_no = de.emp_no
+WHERE de.to_date = ('9999-01-01');
+-- Check the table
+SELECT * FROM current_emp;
+
+-- Employee count by department number
+SELECT COUNT(ce.emp_no), de.dept_no
+FROM current_emp as ce
+LEFT JOIN dept_emp as de
+ON ce.emp_no = de.emp_no
+GROUP BY de.dept_no
+ORDER BY de.dept_no;
+
+-- Employee count by department number
+SELECT COUNT(ce.emp_no), de.dept_no
+INTO retire_bydept
+FROM current_emp as ce
+LEFT JOIN dept_emp as de
+ON ce.emp_no = de.emp_no
+GROUP BY de.dept_no
+ORDER BY de.dept_no;
+-- Check the table
+SELECT * FROM retire_bydept;
+
+
+-- Run a SELECT statement in the query editor to take a look.
+SELECT * FROM salaries
+ORDER BY to_date DESC;
+
+
+-- Need to pull employment dates from the dept_emp table again.
+SELECT emp_no, 
+    first_name, 
+    last_name,
+    gender
+INTO emp_info
+FROM employees
+WHERE (birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+AND (hire_date BETWEEN '1985-01-01' AND '1988-12-31');
+
+
+
+-- Employee Information: A list of employees containing their unique employee number, their 
+-- last name, first name, gender, and salary
+SELECT e.emp_no,
+    e.first_name,
+    e.last_name,
+    e.gender,
+    s.salary,
+    de.to_date
+INTO emp_info2
+FROM employees as e
+INNER JOIN salaries as s
+ON (e.emp_no = s.emp_no)
+INNER JOIN dept_emp as de
+ON (e.emp_no = de.emp_no)
+WHERE (e.birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+     AND (e.hire_date BETWEEN '1985-01-01' AND '1988-12-31')
+     AND (de.to_date = '9999-01-01');
+-- ORDER BY salary DESC
+
